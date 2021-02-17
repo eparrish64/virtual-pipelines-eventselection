@@ -11,16 +11,10 @@ jobs:
   build_skim:
     needs: greeting
     runs-on: ubuntu-latest
-    continue-on-error: true
     container: rootproject/root-conda:${{ matrix.version }}
     strategy:
       matrix:
-        version: [6.18.04]
-        allow_failure: [false]
-        include:
-          - version: latest
-            allow_failure: true
-
+        version: [6.18.04, latest]
     steps:
       - name: checkout repository
         uses: actions/checkout@v2
@@ -31,6 +25,11 @@ jobs:
           FLAGS=$(root-config --cflags --libs)
           $COMPILER -g -O3 -Wall -Wextra -Wpedantic -o skim skim.cxx $FLAGS
 
+      - uses: actions/upload-artifact@v2
+        with:
+          name: skim${{ matrix.version }}
+          path: skim
+
   skim:
     needs: build_skim
     runs-on: ubuntu-latest
@@ -39,5 +38,19 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v2
 
+      - uses: actions/download-artifact@v2
+        with:
+          name: skim6.18.04
+
+      - name: access control
+       run: printf ${{ secrets.USER_PASS }} | base64 -d | kinit ${{ secrets.USER_NAME }}@CERN.CH
+
       - name: skim
-        run: ./skim
+        run: |
+            chmod +x ./skim
+            ./skim root://eosuser.cern.ch//eos/user/g/gstark/AwesomeWorkshopFeb2020/GluGluToHToTauTau.root skim_ggH.root 19.6 11467.0 0.1
+
+       - uses: actions/upload-artifact@v2
+         with:
+           name: skim_ggH
+           path: skim_ggH.root
