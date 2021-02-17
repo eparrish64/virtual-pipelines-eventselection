@@ -14,7 +14,7 @@ jobs:
     continue-on-error: true
     container: rootproject/root-conda:${{ matrix.version }}
     strategy:
-      faill-fast: [false]
+      fail-fast: [false]
       matrix:
         version: [6.18.04]
         allow_failure: [false]
