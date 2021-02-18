@@ -3,18 +3,12 @@ name: example
 on: push
 
 jobs:
-  greeting:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo hello world
-
   build_skim:
-    needs: greeting
     runs-on: ubuntu-latest
     container: rootproject/root-conda:${{ matrix.version }}
     strategy:
       matrix:
-        version: [6.18.04, latest]
+        version: [6.18.04]
     steps:
       - name: checkout repository
         uses: actions/checkout@v2
@@ -48,7 +42,7 @@ jobs:
       - name: skim
         run: |
             chmod +x ./skim
-            ./skim root://eosuser.cern.ch//eos/user/g/gstark/AwesomeWorkshopFeb2020/GluGluToHToTauTau.root skim_ggH.root 19.6 11467.0 0.1
+            ./skim root://eosuser.cern.ch//eos/user/g/gstark/AwesomeWorkshopFeb2020/GluGluToHToTauTau.root skim_ggH.root 19.6 11467.0 0.1 > skim_ggH.log
 
       - uses: actions/upload-artifact@v2
         with:
@@ -74,3 +68,30 @@ jobs:
       with:
         name: histograms
         path: hist_ggH.root
+
+  test_ggH:
+   needs: skim
+   runs-on: ubuntu-latest
+   container: rootproject/root-conda:6.18.04
+   steps:
+    - name: checkout repository
+      uses: actions/checkout@v2
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: skim_ggH
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: histograms
+
+    - name: cutflow_test
+      run: python tests/test_cutflow_ggH.py 
+
+    - name: plot_test
+      run: python tests/test_plot_ggH.py
+
+    # uses: actions/upload-artifact@v2
+    #   with:
+    #     name: test_ggH
+    #     path: 
